@@ -1,0 +1,142 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+
+using namespace std;
+
+// Função para buscar um código em um array utilizando busca binária
+bool buscaBinaria(const string& codigo, string arr[], int inicio, int fim, int& comparacoes) {
+    while (inicio <= fim) {
+        int meio = (inicio + fim) / 2;
+        comparacoes++;
+
+        if (arr[meio] == codigo) {
+            return true;
+        } else if (arr[meio] < codigo) {
+            inicio = meio + 1;
+        } else {
+            fim = meio - 1;
+        }
+    }
+
+    return false;
+}
+
+// Função auxiliar para o QuickSort
+int particionar(string arr[], int baixo, int alto, int& comparacoes, int& movimentacoes) {
+    string pivo = arr[alto];
+    int i = baixo - 1;
+
+    for (int j = baixo; j <= alto - 1; j++) {
+        comparacoes++;
+
+        if (arr[j] < pivo) {
+            i++;
+            // Trocar elementos
+            string temp = arr[i];
+            arr[i] = arr[j];
+            arr[j] = temp;
+            movimentacoes += 2;  // Duas movimentações por troca
+        }
+    }
+
+    // Trocar o pivo
+    string temp = arr[i + 1];
+    arr[i + 1] = arr[alto];
+    arr[alto] = temp;
+    movimentacoes += 2;  // Duas movimentações por troca
+
+    return i + 1;
+}
+
+// Função principal do QuickSort
+void quickSort(string arr[], int baixo, int alto, int& comparacoes, int& movimentacoes) {
+    if (baixo < alto) {
+        int indicePivo = particionar(arr, baixo, alto, comparacoes, movimentacoes);
+
+        quickSort(arr, baixo, indicePivo - 1, comparacoes, movimentacoes);
+        quickSort(arr, indicePivo + 1, alto, comparacoes, movimentacoes);
+    }
+}
+
+// Função para escrever o array ordenado em um arquivo
+void escreverArquivoOrdenado(const string& nomeArquivo, string arr[], int numLinhas) {
+    ofstream arquivoOrdenado("quickSort_" + nomeArquivo);
+    for (int i = 0; i < numLinhas; i++) {
+        arquivoOrdenado << arr[i] << endl;
+    }
+    arquivoOrdenado.close();
+}
+
+int main() {
+    string codigo;
+    int totalComparacoes = 0;
+    int totalMovimentacoes = 0;
+    int ind_mes = -1;  // indica qual mês o código de transação foi encontrado para apresentação final
+
+    while (true) {
+        // Obter código do usuário
+        cout << "Digite o codigo (ou 'sair' para encerrar): ";
+        getline(cin, codigo);
+
+        // Verificar se o usuário deseja sair
+        if (codigo == "sair") {
+            cout << "Encerrando o programa." << endl;
+            break;
+        }
+
+        // Ordenar cada arquivo por QuickSort antes de procurar o código
+        for (int i = 1; i <= 5; i++) {
+            int comparacoes = 0;
+            int movimentacoes = 0;
+            string nomeArquivo = "mes_" + to_string(i) + ".txt";
+
+            ifstream arquivo(nomeArquivo);
+            if (!arquivo.is_open()) {
+                cerr << "Erro ao abrir o arquivo " << nomeArquivo << endl;
+                return 1;
+            }
+
+            string linhas[10002];  // O arquivo com maior numero de linha (mes_5.txt) possui 10002 linhas
+            int numLinhas = 0;
+
+            // Ler as linhas do arquivo para o array
+            while (getline(arquivo, linhas[numLinhas])) {
+                numLinhas++;
+            }
+
+            quickSort(linhas, 0, numLinhas - 1, comparacoes, movimentacoes);
+
+            // Escrever o array ordenado em um arquivo
+            escreverArquivoOrdenado(nomeArquivo, linhas, numLinhas);
+
+            // Exibir estatísticas
+            cout << endl << "No arquivo " << nomeArquivo << " ocorreram: " << endl;
+            cout << "Comparacoes realizadas: " << comparacoes << endl;
+            cout << "Movimentacoes realizadas: " << movimentacoes << endl;
+
+            totalComparacoes += comparacoes;
+            totalMovimentacoes += movimentacoes;
+
+            // Procurar o código usando busca binária
+            if (buscaBinaria(codigo, linhas, 0, numLinhas - 1, comparacoes)) {
+                cout << endl << "O codigo foi encontrado no arquivo " << nomeArquivo << endl;
+                ind_mes = i;
+            }
+
+            arquivo.close();
+        }
+
+        cout << endl << " --- RESULTADO --- " << endl;
+
+        if (ind_mes == -1) {
+            cout << "A transacao com codigo de operacao " << codigo << " nao foi encontrada em nenhum dos meses." << endl;
+        } else {
+            cout << "A transacao com codigo de operacao " << codigo << " foi encontrada no mes " << ind_mes << endl;
+        }
+        cout << "Total de Comparacoes realizadas: " << totalComparacoes << endl;
+        cout << "Total de Movimentacoes realizadas: " << totalMovimentacoes << endl;
+    }
+
+    return 0;
+}
