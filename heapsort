@@ -1,0 +1,148 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+
+using namespace std;
+
+// Função para buscar um código em um array utilizando busca binária
+bool buscaBinaria(const string& codigo, string arr[], int inicio, int fim, int& comparacoes) {
+    while (inicio <= fim) {
+        int meio = (inicio + fim) / 2;
+        comparacoes++;
+
+        if (arr[meio] == codigo) {
+            return true;
+        } else if (arr[meio] < codigo) {
+            inicio = meio + 1;
+        } else {
+            fim = meio - 1;
+        }
+    }
+
+    return false;
+}
+
+// Função auxiliar para o Heapify durante o HeapSort
+void heapify(string arr[], int tamanho, int indice, int& comparacoes, int& movimentacoes) {
+    int maior = indice;
+    int filhoEsquerda = 2 * indice + 1;
+    int filhoDireita = 2 * indice + 2;
+
+    comparacoes += 2; // Duas comparações para as atribuições acima
+
+    if (filhoEsquerda < tamanho && arr[filhoEsquerda] > arr[maior]) {
+        maior = filhoEsquerda;
+    }
+
+    if (filhoDireita < tamanho && arr[filhoDireita] > arr[maior]) {
+        maior = filhoDireita;
+    }
+
+    if (maior != indice) {
+        // Trocar elementos diretamente
+        string temp = arr[indice];
+        arr[indice] = arr[maior];
+        arr[maior] = temp;
+        movimentacoes += 3;  // Três movimentações por troca
+
+        // Recursivamente heapify no subárvore afetada
+        heapify(arr, tamanho, maior, comparacoes, movimentacoes);
+    }
+}
+
+// Função principal do HeapSort e criação de arquivo ordenado
+void heapSort(string arr[], int tamanho, int& comparacoes, int& movimentacoes, const string& nomeArquivo) {
+    // Construir heap (reorganizar array)
+    for (int i = tamanho / 2 - 1; i >= 0; i--) {
+        heapify(arr, tamanho, i, comparacoes, movimentacoes);
+    }
+
+    // Extrair elementos um por um do heap
+    for (int i = tamanho - 1; i >= 0; i--) {
+        // Trocar elementos diretamente
+        string temp = arr[0];
+        arr[0] = arr[i];
+        arr[i] = temp;
+        movimentacoes += 3;  // Três movimentações por troca
+
+        // Chamar heapify no heap reduzido
+        heapify(arr, i, 0, comparacoes, movimentacoes);
+    }
+
+    // Escrever o array ordenado em um arquivo
+    ofstream arquivoOrdenado("heapSort_" + nomeArquivo);
+    for (int i = 0; i < tamanho; i++) {
+        arquivoOrdenado << arr[i] << endl;
+    }
+    arquivoOrdenado.close();
+}
+
+int main() {
+    string codigo;
+    int totalComparacoes = 0;
+    int totalMovimentacoes = 0;
+    int ind_mes = -1;  // indica qual mês o código de transação foi encontrado para apresentação final
+
+    while (true) {
+        // Obter código do usuário
+        cout << "Digite o codigo (ou 'sair' para encerrar): ";
+        getline(cin, codigo);
+
+        // Verificar se o usuário deseja sair
+        if (codigo == "sair") {
+            cout << "Encerrando o programa." << endl;
+            break;
+        }
+
+        // Ordenar cada arquivo por HeapSort antes de procurar o código
+        for (int i = 1; i <= 5; i++) {
+            int comparacoes = 0;
+            int movimentacoes = 0;
+            string nomeArquivo = "mes_" + to_string(i) + ".txt";
+
+            ifstream arquivo(nomeArquivo);
+            if (!arquivo.is_open()) {
+                cerr << "Erro ao abrir o arquivo " << nomeArquivo << endl;
+                return 1;
+            }
+
+            string linhas[10002];  // O arquivo com maior número de linha (mes_5.txt) possui 10002 linhas
+            int numLinhas = 0;
+
+            // Ler as linhas do arquivo para o array
+            while (getline(arquivo, linhas[numLinhas])) {
+                numLinhas++;
+            }
+
+            heapSort(linhas, numLinhas, comparacoes, movimentacoes, nomeArquivo);
+
+            // Exibir estatísticas
+            cout << endl << "No arquivo " << nomeArquivo << " ocorreram: " << endl;
+            cout << "Comparacoes realizadas: " << comparacoes << endl;
+            cout << "Movimentacoes realizadas: " << movimentacoes << endl;
+
+            totalComparacoes += comparacoes;
+            totalMovimentacoes += movimentacoes;
+
+            // Procurar o código usando busca binária
+            if (buscaBinaria(codigo, linhas, 0, numLinhas - 1, comparacoes)) {
+                cout << endl << "O codigo foi encontrado no arquivo " << nomeArquivo << endl;
+                ind_mes = i;
+            }
+
+            arquivo.close();
+        }
+
+        cout << endl << " --- RESULTADO --- " << endl;
+
+        if (ind_mes == -1) {
+            cout << "A transacao com codigo de operacao " << codigo << " nao foi encontrada em nenhum dos meses." << endl;
+        } else {
+            cout << "A transacao com codigo de operacao " << codigo << " foi encontrada no mes " << ind_mes << endl;
+        }
+        cout << "Total de Comparacoes realizadas: " << totalComparacoes << endl;
+        cout << "Total de Movimentacoes realizadas: " << totalMovimentacoes << endl;
+    }
+
+    return 0;
+}
