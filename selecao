@@ -1,0 +1,122 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+
+using namespace std;
+
+// Função para buscar um código em um array utilizando busca binária
+bool buscaBinaria(const string& codigo, string arr[], int inicio, int fim, int& comparacoes) {
+    while (inicio <= fim) {
+        int meio = (inicio + fim) / 2;
+        comparacoes++;
+
+        if (arr[meio] == codigo) {
+            return true;
+        } else if (arr[meio] < codigo) {
+            inicio = meio + 1;
+        } else {
+            fim = meio - 1;
+        }
+    }
+
+    return false;
+}
+
+// Função para ordenar um array por Seleção e criar arquivo ordenado
+void selectionSort(string arr[], int tamanho, int& comparacoes, int& movimentacoes, const string& nomeArquivo) {
+    for (int i = 0; i < tamanho - 1; i++) {
+        int indiceMenor = i;
+
+        for (int j = i + 1; j < tamanho; j++) {
+            comparacoes++;
+            if (arr[j] < arr[indiceMenor]) {
+                indiceMenor = j;
+            }
+        }
+
+        // Trocar elementos diretamente
+        if (indiceMenor != i) {
+            string temp = arr[i];
+            arr[i] = arr[indiceMenor];
+            arr[indiceMenor] = temp;
+            movimentacoes += 3;  // Três movimentações por troca
+        }
+    }
+
+    // Escrever o array ordenado em um arquivo
+    ofstream arquivoOrdenado("selecao_" + nomeArquivo);
+    for (int i = 0; i < tamanho; i++) {
+        arquivoOrdenado << arr[i] << endl;
+    }
+    arquivoOrdenado.close();
+}
+
+int main() {
+    string codigo;
+    int totalComparacoes = 0;
+    int totalMovimentacoes = 0;
+    int ind_mes = -1;  // indica qual mês o código de transação foi encontrado para apresentação final
+
+    while (true) {
+        // Obter código do usuário
+        cout << "Digite o codigo (ou 'sair' para encerrar): ";
+        getline(cin, codigo);
+
+        // Verificar se o usuário deseja sair
+        if (codigo == "sair") {
+            cout << "Encerrando o programa." << endl;
+            break;
+        }
+
+        // Ordenar cada arquivo por Selection Sort antes de procurar o código
+        for (int i = 1; i <= 5; i++) {
+            int comparacoes = 0;
+            int movimentacoes = 0;
+            string nomeArquivo = "mes_" + to_string(i) + ".txt";
+
+            ifstream arquivo(nomeArquivo);
+            if (!arquivo.is_open()) {
+                cerr << "Erro ao abrir o arquivo " << nomeArquivo << endl;
+                return 1;
+            }
+
+            string linhas[10002];  // O arquivo com maior número de linha (mes_5.txt) possui 10002 linhas
+            int numLinhas = 0;
+
+            // Ler as linhas do arquivo para o array
+            while (getline(arquivo, linhas[numLinhas])) {
+                numLinhas++;
+            }
+
+            selectionSort(linhas, numLinhas, comparacoes, movimentacoes, nomeArquivo);
+
+            // Exibir estatísticas
+            cout << endl << "No arquivo " << nomeArquivo << " ocorreram: " << endl;
+            cout << "Comparacoes realizadas: " << comparacoes << endl;
+            cout << "Movimentacoes realizadas: " << movimentacoes << endl;
+
+            totalComparacoes += comparacoes;
+            totalMovimentacoes += movimentacoes;
+
+            // Procurar o código usando busca binária
+            if (buscaBinaria(codigo, linhas, 0, numLinhas - 1, comparacoes)) {
+                cout << endl << "O codigo foi encontrado no arquivo " << nomeArquivo << endl;
+                ind_mes = i;
+            }
+
+            arquivo.close();
+        }
+
+        cout << endl << " --- RESULTADO --- " << endl;
+
+        if (ind_mes == -1) {
+            cout << "A transacao com codigo de operacao " << codigo << " nao foi encontrada em nenhum dos meses." << endl;
+        } else {
+            cout << "A transacao com codigo de operacao " << codigo << " foi encontrada no mes " << ind_mes << endl;
+        }
+        cout << "Total de Comparacoes realizadas: " << totalComparacoes << endl;
+        cout << "Total de Movimentacoes realizadas: " << totalMovimentacoes << endl;
+    }
+
+    return 0;
+}
