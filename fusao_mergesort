@@ -1,0 +1,172 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+
+using namespace std;
+
+// Função para buscar um código em um array utilizando busca binária
+bool buscaBinaria(const string& codigo, string arr[], int inicio, int fim, int& comparacoes) {
+    while (inicio <= fim) {
+        int meio = (inicio + fim) / 2;
+        comparacoes++;
+
+        if (arr[meio] == codigo) {
+            return true;
+        } else if (arr[meio] < codigo) {
+            inicio = meio + 1;
+        } else {
+            fim = meio - 1;
+        }
+    }
+
+    return false;
+}
+
+// Função para fundir dois subarrays de arr[]
+void merge(string arr[], int inicio, int meio, int fim, int& comparacoes, int& movimentacoes) {
+    int n1 = meio - inicio + 1;
+    int n2 = fim - meio;
+
+    // Criar arrays temporários
+    string L[n1], R[n2];
+
+    // Copiar dados para os arrays temporários L[] e R[]
+    for (int i = 0; i < n1; i++) {
+        L[i] = arr[inicio + i];
+    }
+    for (int j = 0; j < n2; j++) {
+        R[j] = arr[meio + 1 + j];
+    }
+
+    // Fusão dos arrays temporários de volta para arr[]
+    int i = 0;  // Índice inicial do primeiro subarray
+    int j = 0;  // Índice inicial do segundo subarray
+    int k = inicio;  // Índice inicial do subarray fundido
+
+    while (i < n1 && j < n2) {
+        comparacoes++;
+        if (L[i] <= R[j]) {
+            arr[k] = L[i];
+            i++;
+        } else {
+            arr[k] = R[j];
+            j++;
+        }
+        movimentacoes++;
+        k++;
+    }
+
+    // Copiar os elementos restantes de L[], se houver algum
+    while (i < n1) {
+        arr[k] = L[i];
+        movimentacoes++;
+        i++;
+        k++;
+    }
+
+    // Copiar os elementos restantes de R[], se houver algum
+    while (j < n2) {
+        arr[k] = R[j];
+        movimentacoes++;
+        j++;
+        k++;
+    }
+}
+
+// Função principal do Merge Sort que classifica arr[inicio..fim]
+void mergeSort(string arr[], int inicio, int fim, int& comparacoes, int& movimentacoes) {
+    if (inicio < fim) {
+        // Encontrar o ponto médio do array
+        int meio = inicio + (fim - inicio) / 2;
+
+        // Classificar primeira e segunda metade
+        mergeSort(arr, inicio, meio, comparacoes, movimentacoes);
+        mergeSort(arr, meio + 1, fim, comparacoes, movimentacoes);
+
+        // Fusão das metades classificadas
+        merge(arr, inicio, meio, fim, comparacoes, movimentacoes);
+    }
+}
+
+// Função para escrever o array ordenado em um arquivo
+void escreverArquivoOrdenado(const string& nomeArquivo, string arr[], int numLinhas) {
+    ofstream arquivoOrdenado("fusao_" + nomeArquivo);
+    for (int i = 0; i < numLinhas; i++) {
+        arquivoOrdenado << arr[i] << endl;
+    }
+    arquivoOrdenado.close();
+}
+
+int main() {
+    string codigo;
+    int totalComparacoes = 0;
+    int totalMovimentacoes = 0;
+    int ind_mes = -1;  // indica qual mês o código de transação foi encontrado para apresentação final
+
+    while (true) {
+        // Obter código do usuário
+        cout << "Digite o codigo (ou 'sair' para encerrar): ";
+        getline(cin, codigo);
+
+        // Verificar se o usuário deseja sair
+        if (codigo == "sair") {
+            cout << "Encerrando o programa." << endl;
+            break;
+        }
+
+        // Ordenar cada arquivo por Merge Sort antes de procurar o código
+        for (int i = 1; i <= 5; i++) {
+            int comparacoes = 0;
+            int movimentacoes = 0;
+            string nomeArquivo = "mes_" + to_string(i) + ".txt";
+
+            ifstream arquivo(nomeArquivo);
+            if (!arquivo.is_open()) {
+                cerr << "Erro ao abrir o arquivo " << nomeArquivo << endl;
+                return 1;
+            }
+
+            string linhas[10002];  // O arquivo com maior numero de linha (mes_5.txt) possui 10002 linhas
+            int numLinhas = 0;
+
+            // Ler as linhas do arquivo para o array
+            while (getline(arquivo, linhas[numLinhas])) {
+                numLinhas++;
+            }
+
+            // Chamar a função Merge Sort para ordenar o array
+            mergeSort(linhas, 0, numLinhas - 1, comparacoes, movimentacoes);
+
+            // Escrever o array ordenado em um arquivo
+            escreverArquivoOrdenado(nomeArquivo, linhas, numLinhas);
+
+            // Exibir estatísticas
+            cout << endl << "No arquivo " << nomeArquivo << " ocorreram: " << endl;
+            cout << "Comparacoes realizadas: " << comparacoes << endl;
+            cout << "Movimentacoes realizadas: " << movimentacoes << endl;
+
+            totalComparacoes += comparacoes;
+            totalMovimentacoes += movimentacoes;
+
+            // Procurar o código usando busca binária
+            if (buscaBinaria(codigo, linhas, 0, numLinhas - 1, comparacoes)) {
+                cout << endl << "O codigo foi encontrado no arquivo " << nomeArquivo << endl;
+                ind_mes = i;
+            }
+
+            arquivo.close();
+        }
+
+        cout << endl << " --- RESULTADO --- " << endl;
+
+        if (ind_mes == -1) {
+            cout << "A transacao com codigo de operacao " << codigo << " nao foi encontrada em nenhum dos meses." << endl;
+        } else {
+            cout << "A transacao com codigo de operacao " << codigo << " foi encontrada no mes " << ind_mes << endl;
+        }
+        cout << "Total de Comparacoes realizadas: " << totalComparacoes << endl;
+        cout << "Total de Movimentacoes realizadas: " << totalMovimentacoes << endl;
+    }
+
+    return 0;
+}
