@@ -1,0 +1,154 @@
+// ANDREEEEEEEEEEE --- falta ajustar comparacoes e moimentações
+
+#include <iostream>
+#include <fstream>
+#include <string>
+
+using namespace std;
+
+// Função para buscar um código em um arquivo utilizando busca binária
+bool buscaBinaria(const string& codigo, const string& nomeArquivo, int& comparacoes) {
+    ifstream arquivo(nomeArquivo);
+
+    if (!arquivo.is_open()) {
+        cerr << "Erro ao abrir o arquivo " << nomeArquivo << endl;
+        return false;
+    }
+
+    string linhas[10002];  // O arquivo com maior numero de linha (mes_5.txt) possui 10002 linhas
+    int numLinhas = 0;
+
+    // Ler as linhas do arquivo para o array
+    while (getline(arquivo, linhas[numLinhas])) {
+        numLinhas++;
+    }
+
+    // Busca binária
+    int inicio = 0;
+    int fim = numLinhas - 1;
+    while (inicio <= fim) {
+        int meio = (inicio + fim) / 2;
+        comparacoes++;
+
+        if (linhas[meio] == codigo) {
+            arquivo.close();
+            return true;
+        } else if (linhas[meio] < codigo) {
+            inicio = meio + 1;
+        } else {
+            fim = meio - 1;
+        }
+    }
+
+    arquivo.close();
+    return false;
+}
+
+// Função para ordenar um arquivo por inserção binária
+void insercaoBinaria(const string& nomeArquivo, int& comparacoes, int& movimentacoes) {
+    ifstream arquivo(nomeArquivo);
+    if (!arquivo.is_open()) {
+        cerr << "Erro ao abrir o arquivo " << nomeArquivo << endl;
+        return;
+    }
+
+    string linhas[10002];  // O arquivo com maior numero de linha (mes_5.txt) possui 10002 linhas
+    int numLinhas = 0;
+
+    // Ler as linhas do arquivo para o array
+    while (getline(arquivo, linhas[numLinhas])) {
+        numLinhas++;
+    }
+
+    // Ordenar por inserção binária
+    for (int i = 1; i < numLinhas; i++) {
+        string chave = linhas[i];               // Movimentação - envolvendo vetor
+        movimentacoes++;
+        int inicio = 0;
+        int fim = i - 1;
+
+        // Encontrar a posição correta para a chave
+        while (inicio <= fim) {
+            int meio = (inicio + fim) / 2;
+            comparacoes++;
+
+            if (linhas[meio] > chave) {
+                fim = meio - 1;
+            } else {
+                inicio = meio + 1;
+            }
+        }
+
+        // Mover os elementos maiores para frente
+        for (int j = i - 1; j >= inicio; j--) {
+            linhas[j + 1] = linhas[j];          // Movimentação - envolvendo vetor
+            movimentacoes++;
+        }
+
+        linhas[inicio] = chave;                  // Movimentação - envolvendo vetor
+        movimentacoes++;
+    }
+
+    // Reescrever o arquivo ordenado
+    arquivo.close();
+    ofstream arquivoOrdenado("insercaobinaria_" + nomeArquivo);
+    for (int i = 0; i < numLinhas; i++) {
+        arquivoOrdenado << linhas[i] << endl;
+    }
+    arquivoOrdenado.close();
+}
+
+int main() {
+    string codigo;
+    int totalComparacoes = 0;
+    int totalMovimentacoes = 0;
+    int ind_mes = -1;  // indica qual mês o código de transação foi encontrado para apresentação final
+
+    while (true) {
+        // Obter código do usuário
+        cout << "Digite o codigo (ou 'sair' para encerrar): ";
+        getline(cin, codigo);
+
+        // Verificar se o usuário deseja sair
+        if (codigo == "sair") {
+            cout << "Encerrando o programa." << endl;
+            break;
+        }
+
+        cout << endl << " --- INSERCAO BINARIA E BUSCA BINARIA --- ";
+
+        // Ordenar cada arquivo por inserção binária antes de procurar o código
+        for (int i = 1; i <= 5; i++) {
+            int comparacoes = 0;
+            int movimentacoes = 0;
+            string nomeArquivo = "mes_" + to_string(i) + ".txt";
+
+            insercaoBinaria(nomeArquivo, comparacoes, movimentacoes);
+
+            cout << endl << "No arquivo " << nomeArquivo << " ocorreram: " << endl;
+            cout << "Comparacoes realizadas: " << comparacoes << endl;
+            cout << "Movimentacoes realizadas: " << movimentacoes << endl;
+
+            totalComparacoes += comparacoes;
+            totalMovimentacoes += movimentacoes;
+
+            if (buscaBinaria(codigo, "insercaobinaria_" + nomeArquivo, comparacoes)) {
+                cout << endl << "O codigo foi encontrado no arquivo " << nomeArquivo << endl;
+                //break   // Ativar o break caso o professor queira somente saber se o código de transação está presente em ao menos um dos 5 meses.
+                ind_mes = i;
+            }
+        }
+
+        cout << endl << " --- RESULTADO (INSERCAO BINARIA E BUSCA BINARIA) --- " << endl;
+
+        if (ind_mes == -1) {
+            cout << "A transacao com codigo de operacao " << codigo << " nao foi encontrada em nenhum dos meses." << endl;
+        } else {
+            cout << "A transacao com codigo de operacao " << codigo << " foi encontrada no mes " << ind_mes << endl;
+        }
+        cout << "Total de Comparacoes realizadas: " << totalComparacoes << endl;
+        cout << "Total de Movimentacoes realizadas: " << totalMovimentacoes << endl;
+    }
+
+    return 0;                        // //ZZZZZTZGTG em 4 e 5 // ZZZZZZXZZZ exclusivo do 4
+} 
